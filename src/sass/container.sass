@@ -1,0 +1,18 @@
+@use "./variables"
+@use "./mixins"
+
+//area container    
+#mainContainer 
+    max-width: 1200px
+    margin: 0 auto
+    display: flex
+    justify-content: center
+    padding: 2rem 0
+
+//calculator area
+#calculator 
+    background: variables.$bgDark
+    width: 300px
+    padding: 5px
+    @include mixins.flex-column
+    align-items: flex-start
