@@ -1,9 +1,12 @@
 
-
 function Button(props: any){
     return (
-        <button className={props.classes} id={props.id}>
-            {props.text}
+        <button 
+            className={props.className}
+            id={props.id}
+            onClick={props.onClick}
+        >
+            {props.children}
         </button>
     )
 }
