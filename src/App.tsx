@@ -18,9 +18,8 @@ function App() {
 
   //use state
   const [accumulator, setAccumulator] = useState("");
-  const [expression, setExpression] = useState("");
+  const [expression, setExpression] = useState("0");
   const [currentOperator, setCurrentOperator] = useState("");
-  const [currentValue, setCurrentValue] = useState(0);
 
   //list buttons
   const buttons = [
@@ -45,7 +44,7 @@ function App() {
     { text: "3", className: "btn-number" },
     { text: "+", className: "btn-operation" },
     //row 5
-    { text: ".", className: "btn-number" },
+    { text: ",", className: "btn-number" },
     { text: "0", className: "btn-number" },
     { text: "=", className: "btn-operation", id: "equal" },
   ];
@@ -62,87 +61,97 @@ function App() {
     return n1 * n2;
   }
 
-  function divide(n1: number, n2: number): number {
-    return n2 != 0 ? n1 / n2 : 0;
+  function divide(n1: number, n2: number): number | string {
+    return n2 != 0 ? n1 / n2 : "Não é possível dividir por 0.";
   }
 
-  function addDigit(text: string) {
-    const alreayHasADotInExpression = text == "." && expression.includes(".");
-    if (alreayHasADotInExpression) {
-      return;
+  class Calculator {
+
+    accumulator;
+    expression;
+    operator;
+    totalCharAllowed;
+
+    constructor(accumulator: string, expression: string, operator: string){
+      this.accumulator = accumulator;
+      this.expression = expression;
+      this.operator = operator;
+      this.totalCharAllowed = 20;
     }
 
-    setExpression(expression + text);
-  }
-
-  function clearExpression() {
-    setExpression("");
-  }
-
-  function clearAll() {
-    setExpression("");
-    setAccumulator("");
-  }
-
-  function clearLastDigit() {
-    setExpression(expression.slice(0, -1));
-  }
-
-  function calculateResult(currentOperador: string, n1: number, n2: number) {
-    switch (currentOperador) {
-      case "+":
-        setCurrentValue(sum(n1, n2));
-        break;
-      case "-":
-        setCurrentValue(subtract(n1, n2));
-        break;
-      case "×":
-        setCurrentValue(multiply(n1, n2));
-        break;
-      case "÷":
-        setCurrentValue(divide(n1, n2));
-        break;
+    updateDisplay(){
+      setAccumulator(this.accumulator);
+      setExpression(this.expression? this.expression: "0");
     }
-  }
 
-  function OperateInCurrentExpression(text: string) {
-    setAccumulator(`${expression} ${currentOperator}`);
-  }
+    addDigit(text: string){
+      
+      const exceededNumberCharAllowed = this.expression.length >= this.totalCharAllowed;
+      const alredyExistsAComma = text == "," && this.expression.includes(",");
+      const expressionEqualsZero = this.expression == "0";
+      const textIsNotEqualsComma = text != ",";
 
-  function showResult() {
-    setAccumulator("");
-    setExpression(`${currentValue || ""}`);
-  }
+      if (exceededNumberCharAllowed ||
+        alredyExistsAComma){
+        return;
+      }
 
-  function Operate(text: string) {
+      if (expressionEqualsZero && textIsNotEqualsComma){
+        this.expression = text;
+      } else {
+        this.expression += text;
+      }
 
-    switch (text) {
-      case "CE":
-        clearExpression();
-        break;
-      case "C":
-        clearAll();
-        break;
-      case "":
-        clearLastDigit();
-        break;
-      case "=":
-        showResult();
-        break;
-      default:
-        OperateInCurrentExpression(text);
-        break;
+      this.updateDisplay();
     }
+
+    clearCurrentExpression(){
+      this.expression = "0";
+    }
+
+    clearAll(){
+      this.expression = "0";
+      this.accumulator = "";
+    }
+
+    clearLastCharInExpression(){
+      if (this.expression === "0"){
+        return;
+      }
+      this.expression = this.expression.slice(0, -1);
+    }
+
+    operate(text: string){
+
+      //calculator operations
+      switch(text.toLowerCase()){
+        case "ce":
+          this.clearCurrentExpression();
+          break;
+        case "c":
+          this.clearAll();
+          break;
+        case "":
+          this.clearLastCharInExpression();
+          break;
+      }
+
+      this.updateDisplay();
+    }
+
   }
+
+  //object for to control of the calculator
+  const calc = new Calculator(accumulator, expression);
 
   function handleClick(e: any) {
     const text: string = e.target.innerText;
     //add digit for the numbers
-    const isNumberOrDot = (text == "." || +text >= 0 && text != "");
+    const isNumberOrDot = (text == "," || +text >= 0 && text != "");
     if (isNumberOrDot) {
-      addDigit(text);
+      calc.addDigit(text);
     } else {
-      Operate(text)
+      calc.operate(text);
     }
   }
 
