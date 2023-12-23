@@ -6,7 +6,6 @@ import Container from "./components/Container";
 import Title from "./components/Title";
 import Display from "./components/Display";
 import Buttons from "./components/Buttons";
-import Button from "./components/Button";
 
 //use states
 import { useState } from "react";
@@ -19,7 +18,6 @@ function App() {
   //use state
   const [accumulator, setAccumulator] = useState("");
   const [expression, setExpression] = useState("0");
-  const [currentOperator, setCurrentOperator] = useState("");
 
   //list buttons
   const buttons = [
@@ -49,82 +47,149 @@ function App() {
     { text: "=", className: "btn-operation", id: "equal" },
   ];
 
-  function sum(n1: number, n2: number): number {
-    return n1 + n2;
-  }
-
-  function subtract(n1: number, n2: number): number {
-    return n1 - n2;
-  }
-
-  function multiply(n1: number, n2: number): number {
-    return n1 * n2;
-  }
-
-  function divide(n1: number, n2: number): number | string {
-    return n2 != 0 ? n1 / n2 : "Não é possível dividir por 0.";
-  }
-
   class Calculator {
 
     accumulator;
     expression;
-    operator;
-    totalCharAllowed;
+    currentValue: string | number;
 
-    constructor(accumulator: string, expression: string, operator: string){
+    constructor(accumulator: string, expression: string) {
       this.accumulator = accumulator;
       this.expression = expression;
-      this.operator = operator;
-      this.totalCharAllowed = 20;
+      this.currentValue = 0;
     }
 
-    updateDisplay(){
-      setAccumulator(this.accumulator);
-      setExpression(this.expression? this.expression: "0");
+    sum(n1: number, n2: number): number {
+      return n1 + n2;
+    }
+  
+    subtract(n1: number, n2: number): number {
+      return n1 - n2;
+    }
+  
+    multiply(n1: number, n2: number): number {
+      return n1 * n2;
+    }
+  
+    divide(n1: number, n2: number): number {
+      return n2 != 0 ? n1 / n2 : 0;
     }
 
-    addDigit(text: string){
-      
-      const exceededNumberCharAllowed = this.expression.length >= this.totalCharAllowed;
+    updateDisplay(updAcc: boolean, updExp: boolean) {
+      //test conditional redering
+      if (updAcc) {
+        setAccumulator(this.accumulator);
+      }
+      if (updExp) {
+        setExpression(this.expression ?? "0");
+      }
+    }
+
+    addDigit(text: string) {
+
       const alredyExistsAComma = text == "," && this.expression.includes(",");
       const expressionEqualsZero = this.expression == "0";
       const textIsNotEqualsComma = text != ",";
 
-      if (exceededNumberCharAllowed ||
-        alredyExistsAComma){
+      if (alredyExistsAComma) {
         return;
       }
 
-      if (expressionEqualsZero && textIsNotEqualsComma){
-        this.expression = text;
+      if (expressionEqualsZero && textIsNotEqualsComma) {
+        this.expression = text
       } else {
         this.expression += text;
       }
 
-      this.updateDisplay();
+      this.updateDisplay(false, true);
     }
 
-    clearCurrentExpression(){
+    clearCurrentExpression() {
       this.expression = "0";
+      this.updateDisplay(false, true);
     }
 
-    clearAll(){
+    clearAll() {
       this.expression = "0";
       this.accumulator = "";
+      this.updateDisplay(true, true);
     }
 
-    clearLastCharInExpression(){
-      if (this.expression === "0"){
+    clearLastCharInExpression() {
+      if (this.expression.length == 1) {
+        this.expression = "0";
+        this.updateDisplay(false, true);
         return;
       }
       this.expression = this.expression.slice(0, -1);
+      this.updateDisplay(false, true);
     }
 
-    operate(text: string){
+    operateNow(v1: number, v2: number, opt: string){
+      
+      switch(opt){
+        case "+":
+          this.currentValue = this.sum(v1, v2);
+          break;
+        case "-":
+          this.currentValue = this.subtract(v1, v2);
+          break;
+        case "\u00d7":
+          this.currentValue = this.multiply(v1, v2);
+          break;
+        case "\u00f7":
+          this.currentValue = this.divide(v1, v2);
+          break;
+      }
+
+      return this.currentValue.toString().replace(".", ",");
+    }
+
+    showResult(){
+
+      if (this.accumulator == ""){
+        return;
+      }
+
+      const currentValue = this.operateNow(
+        +this.accumulator.slice(0, -2).replace(",", "."),
+        +this.expression.replace(",", "."),
+        this.accumulator.slice(-1)
+      );
+
+      this.accumulator = "";
+      this.expression = currentValue;
+      this.updateDisplay(true, true);
+    }
+
+    executeMathOperation(text: string) {
+
+      if (this.accumulator == ""){
+        this.accumulator = `${expression} ${text}`;
+        this.expression = "0";
+      } else {
+        if (expression == "0"){
+          this.accumulator = `${this.accumulator.slice(0, -2)} ${text}`
+        } else {
+          const currentValue = this.operateNow(
+            +this.accumulator.slice(0, -2).replace(",", "."),
+            +this.expression.replace(",", "."), 
+            text
+          );
+
+          this.accumulator = `${currentValue} ${text}`;
+          this.expression = "0";
+        }
+      }
+
+      this.updateDisplay(true, true);
+
+    }
+
+    operate(text: string) {
 
       //calculator operations
-      switch(text.toLowerCase()){
+      switch (text.toLowerCase()) {
         case "ce":
           this.clearCurrentExpression();
           break;
@@ -134,20 +199,23 @@ function App() {
         case "":
           this.clearLastCharInExpression();
           break;
+        case "=":
+          this.showResult();
+          break;
+        default:
+          this.executeMathOperation(text);
+          break;
       }
-
-      this.updateDisplay();
     }
-
   }
 
-  //object for to control of the calculator
-  const calc = new Calculator(accumulator, expression);
-
   function handleClick(e: any) {
+    //object for to control of the calculator
+    const calc = new Calculator(accumulator, expression);
     const text: string = e.target.innerText;
     //add digit for the numbers
     const isNumberOrDot = (text == "," || +text >= 0 && text != "");
+    
     if (isNumberOrDot) {
       calc.addDigit(text);
     } else {
@@ -163,19 +231,10 @@ function App() {
           accumulator={accumulator}
           expression={expression}
         />
-        <Buttons>
-          {
-            buttons.map((btnIndex: any, index: number) => {
-              return <Button className={`btn ${btnIndex.className}`}
-                id={btnIndex.id ?? `btn${index + 1}`}
-                key={index}
-                onClick={(e: any) => { handleClick(e) }}
-              >
-                {btnIndex.text}
-              </Button>
-            })
-          }
-        </Buttons>
+        <Buttons
+          buttons={buttons}
+          onClick={handleClick}
+        />
       </Container>
     </Container>
   )
