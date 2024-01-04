@@ -212,7 +212,7 @@ function App() {
   function handleClick(e: any) {
     //object for to control of the calculator
     const calc = new Calculator(accumulator, expression);
-    const text: string = e.target.innerText;
+    const text = e.target.innerText;
     //add digit for the numbers
     const isNumberOrDot = (text == "," || +text >= 0 && text != "");
     
